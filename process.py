@@ -3,6 +3,9 @@ import bz2
 from pathlib import Path
 import collections
 import csv
+import re
+
+DATA_DIR = "data"
 
 def load_run_results(filename):
     with bz2.open(filename) as f:
@@ -13,13 +16,17 @@ def load_run_results(filename):
             name = run.get("name")
             properties = run.get("properties")
             expected_verdict = run.get("expectedVerdict")
-            status = run.find("""column[@title="status"]""").get("value")
+            status_column = run.find("""column[@title="status"]""")
+            if status_column is not None:
+                status = status_column.get("value")
+            else:
+                status = None
             ret[(name, properties, expected_verdict)] = status
         return ret
 
 def load_tool_results(tool):
     ret = {}
-    for file in Path("data/").glob(f"{tool}.*.results.*.xml.bz2"):
+    for file in Path(f"{DATA_DIR}/").glob(f"{tool}.*.results.*.xml.bz2"):
         ret |= load_run_results(file)
     return ret
 
@@ -37,17 +44,52 @@ def get_result_pairs(verifier_results, validator_results):
     return result_pairs
 
 def ratio(result_pairs):
-    verifier_trues = 0
+    corrects = 0
+    corrects_validated = 0
     for result_pair, count in result_pairs.items():
         expected_verdict, verifier_status, validator_status = result_pair
-        if expected_verdict == "true" and verifier_status == "true":
-            verifier_trues += count
+        if verifier_status == expected_verdict:
+            corrects += count
+            if validator_status == expected_verdict or validator_status == "done":
+                corrects_validated += count
 
-    verifier_trues_validated = result_pairs[("true", "true", "true")]
-    return (verifier_trues_validated, verifier_trues)
+    return (corrects_validated, corrects)
 
-verifiers = ["goblint", "mopsa", "uautomizer", "cpachecker"]
-validators = verifiers
+# verifiers = ["goblint", "mopsa", "uautomizer", "cpachecker"]
+# validators = verifiers
+
+get_verifiers_re = re.compile(r"([\w.-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP24_[\w-]+).([\w.-]+?).xml.bz2")
+get_validators_re = re.compile(r"([\w.-]+-validate-(violation|correctness)-witnesses-[12].0)-([\w.-]+)")
+
+def get_verifiers():
+    ret = set()
+    for file in Path(f"{DATA_DIR}/").glob(f"*.results.*.xml.bz2"):
+        m = get_verifiers_re.fullmatch(file.name)
+        if m:
+            verifier = m.group(1)
+            if "witnesses" not in verifier:
+                ret.add(verifier)
+    return ret
+
+def get_validators(verifier0):
+    ret = set()
+    for file in Path(f"{DATA_DIR}/").glob(f"*.results.*.xml.bz2"):
+        m = get_verifiers_re.fullmatch(file.name)
+        if m:
+            verifier = m.group(1)
+            # print(verifier)
+            m2 = get_validators_re.fullmatch(verifier)
+            # print(m2)
+            if m2:
+                verifier2 = m2.group(3)
+                validator = m2.group(1)
+                # print((validator, verifier2))
+                if verifier2 == verifier0:
+                    ret.add(validator)
+    # assert False
+    return ret
+
+verifiers = get_verifiers()
 
 with open("out.csv", "w", newline="") as csvfile:
     fields = ["verifier", "validator", "expected_verdict", "verifier_status", "validator_status", "count"]
@@ -57,9 +99,10 @@ with open("out.csv", "w", newline="") as csvfile:
     for verifier in verifiers:
         print(verifier)
         verifier_results = load_tool_results(verifier)
+        validators = get_validators(verifier)
         for validator in validators:
             print(f"  {validator}")
-            validator_results = load_tool_results(f"{validator}-validate-correctness-witnesses-2.0-{verifier}")
+            validator_results = load_tool_results(f"{validator}-{verifier}")
 
             result_pairs = get_result_pairs(verifier_results, validator_results)
 
@@ -74,5 +117,5 @@ with open("out.csv", "w", newline="") as csvfile:
                     "count": count,
                 })
 
-            verifier_trues_validated, verifier_trues = ratio(result_pairs)
-            print(f"    {verifier_trues_validated}/{verifier_trues} = {verifier_trues_validated / verifier_trues * 100:.2f}%")
+            corrects_validated, corrects = ratio(result_pairs)
+            print(f"    {corrects_validated}/{corrects} = {corrects_validated / corrects * 100:.2f}%")
