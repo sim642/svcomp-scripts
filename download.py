@@ -2,6 +2,7 @@ import requests
 import lxml.html
 import re
 import shutil
+import os
 from dataclasses import dataclass
 from typing import List, Set
 
@@ -13,6 +14,8 @@ verifiers = ["goblint", "mopsa", "uautomizer", "cpachecker"]
 # validators = verifiers
 # validators = ["goblint", "mopsa", "uautomizer"]
 validators = ["cpachecker"]
+
+os.makedirs("data")
 
 @dataclass(frozen=True)
 class ToolRun:
@@ -78,20 +81,20 @@ def download_tool_run_xml(tool_run: ToolRun, validator: bool):
         url = f"{BASE_URL}/results-validated/{filename}"
     else:
         url = f"{BASE_URL}/results-verified/{filename}"
-    download(url, filename)
+    download(url, f"data/{filename}")
 
+verifier_runs = get_verifier_runs()
+for i, tool_run in enumerate(verifier_runs):
+    # if tool_run.tool not in verifiers:
+    #     continue
 
-for tool_run in get_verifier_runs():
-    if tool_run.tool not in verifiers:
-        continue
-
-    print(tool_run)
+    print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     download_tool_run_xml(tool_run, validator=False)
 
     s = get_validator_runs(tool_run)
     for a in s:
-        if a.validator not in validators:
-            continue
+        # if a.validator not in validators:
+        #     continue
         tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
         validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set)
         print(f"  {a}")
