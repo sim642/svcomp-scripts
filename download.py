@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import List, Set
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2024/results"
+DATA_DIR = "data2"
 
 # verifiers = ["goblint", "mopsa", "uautomizer"]
 # verifiers = ["cpachecker"]
@@ -15,7 +16,7 @@ verifiers = ["goblint", "mopsa", "uautomizer", "cpachecker"]
 # validators = ["goblint", "mopsa", "uautomizer"]
 validators = ["cpachecker"]
 
-os.makedirs("data")
+os.makedirs(DATA_DIR)
 
 @dataclass(frozen=True)
 class ToolRun:
@@ -41,7 +42,7 @@ def download(url, filename):
 
 
 
-get_verifier_runs_re = re.compile(r"(\w+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP24_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
+get_verifier_runs_re = re.compile(r"([\w-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP24_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
 get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w.-]+)-validate-(violation|correctness)-witnesses-([12].0)-([\w.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
 
 def get_verifier_runs() -> List[ToolRun]:
@@ -81,7 +82,7 @@ def download_tool_run_xml(tool_run: ToolRun, validator: bool):
         url = f"{BASE_URL}/results-validated/{filename}"
     else:
         url = f"{BASE_URL}/results-verified/{filename}"
-    download(url, f"data/{filename}")
+    download(url, f"{DATA_DIR}/{filename}")
 
 verifier_runs = get_verifier_runs()
 for i, tool_run in enumerate(verifier_runs):
