@@ -1,0 +1,7 @@
+*.xml
+*.bz2
+*.csv
+*.html
+*.txt
+
+.vscode/
