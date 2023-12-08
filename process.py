@@ -5,7 +5,7 @@ import collections
 import csv
 import re
 
-DATA_DIR = "data"
+DATA_DIR = "data2"
 
 def load_run_results(filename):
     with bz2.open(filename) as f:
@@ -91,7 +91,7 @@ def get_validators(verifier0):
 
 verifiers = get_verifiers()
 
-with open("out.csv", "w", newline="") as csvfile:
+with open("out2.csv", "w", newline="") as csvfile:
     fields = ["verifier", "validator", "expected_verdict", "verifier_status", "validator_status", "count"]
     writer = csv.DictWriter(csvfile, fieldnames=fields)
     writer.writeheader()
@@ -118,4 +118,5 @@ with open("out.csv", "w", newline="") as csvfile:
                 })
 
             corrects_validated, corrects = ratio(result_pairs)
-            print(f"    {corrects_validated}/{corrects} = {corrects_validated / corrects * 100:.2f}%")
+            if corrects != 0:
+                print(f"    {corrects_validated}/{corrects} = {corrects_validated / corrects * 100:.2f}%")
