@@ -38,8 +38,8 @@ def get_result_pairs(verifier_results, validator_results):
         else:
             validator_status = None
 
-        _, _, expected_verdict = task
-        result_pairs[(expected_verdict, verifier_status, validator_status)] += 1
+        _, property, expected_verdict = task
+        result_pairs[(property, expected_verdict, verifier_status, validator_status)] += 1
 
     return result_pairs
 
@@ -47,7 +47,7 @@ def ratio(result_pairs):
     corrects = 0
     corrects_validated = 0
     for result_pair, count in result_pairs.items():
-        expected_verdict, verifier_status, validator_status = result_pair
+        _, expected_verdict, verifier_status, validator_status = result_pair
         if verifier_status == expected_verdict:
             corrects += count
             if validator_status == expected_verdict or validator_status == "done":
@@ -91,26 +91,31 @@ def get_validators(verifier0):
 
 verifiers = get_verifiers()
 
-with open("out2.csv", "w", newline="") as csvfile:
-    fields = ["verifier", "validator", "expected_verdict", "verifier_status", "validator_status", "count"]
+with open("out2_property.csv", "w", newline="") as csvfile:
+    fields = ["verifier", "validator", "property", "expected_verdict", "verifier_status", "validator_status", "count"]
     writer = csv.DictWriter(csvfile, fieldnames=fields)
     writer.writeheader()
 
     for verifier in verifiers:
+        # if verifier != "goblint":
+        #     continue
         print(verifier)
         verifier_results = load_tool_results(verifier)
         validators = get_validators(verifier)
         for validator in validators:
+            # if validator != "goblint-validate-correctness-witnesses-2.0":
+            #     continue
             print(f"  {validator}")
             validator_results = load_tool_results(f"{validator}-{verifier}")
 
             result_pairs = get_result_pairs(verifier_results, validator_results)
 
             for result_pair, count in result_pairs.items():
-                expected_verdict, verifier_status, validator_status = result_pair
+                property, expected_verdict, verifier_status, validator_status = result_pair
                 writer.writerow({
                     "verifier": verifier,
                     "validator": validator,
+                    "property": property,
                     "expected_verdict": expected_verdict,
                     "verifier_status": verifier_status,
                     "validator_status": validator_status,
