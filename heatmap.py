@@ -1,5 +1,6 @@
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 data = pd.read_csv("out4.csv")
 print(data)
@@ -31,6 +32,7 @@ true_pivot = true_ratio.pivot_table(index="verifier", columns="validator", value
 false_pivot = false_ratio.pivot_table(index="verifier", columns="validator", values="count").filter(axis=1, like="violation") # TODO: some correctness validators confirm falses?
 pivot = true_pivot.join(false_pivot, how="outer").sort_index(axis=1)
 
+plt.figure(figsize=(12, 9))
 h = sns.heatmap(data=pivot, vmin=0.0, vmax=1.0, square=True, cmap="RdYlGn", xticklabels=True, yticklabels=True)
 h.get_figure().savefig("out4.svg", bbox_inches="tight")
 
