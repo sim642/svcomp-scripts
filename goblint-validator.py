@@ -1,6 +1,6 @@
 import pandas as pd
 
-data = pd.read_csv("out2_property.csv")
+data = pd.read_csv("out4.csv")
 
 goblint = data[(data["verifier"] == "goblint") & (data["validator"] == "goblint-validate-correctness-witnesses-2.0")][["property", "expected_verdict", "verifier_status", "validator_status", "count"]]
 

@@ -1,7 +1,7 @@
 import pandas as pd
 import seaborn as sns
 
-data = pd.read_csv("out2.csv")
+data = pd.read_csv("out4.csv")
 print(data)
 
 true = data[data["expected_verdict"] == "true"]
@@ -32,5 +32,5 @@ false_pivot = false_ratio.pivot_table(index="verifier", columns="validator", val
 pivot = true_pivot.join(false_pivot, how="outer").sort_index(axis=1)
 
 h = sns.heatmap(data=pivot, vmin=0.0, vmax=1.0, square=True, cmap="RdYlGn", xticklabels=True, yticklabels=True)
-h.get_figure().savefig("out.svg", bbox_inches="tight")
+h.get_figure().savefig("out4.svg", bbox_inches="tight")
 

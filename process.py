@@ -5,7 +5,7 @@ import collections
 import csv
 import re
 
-DATA_DIR = "data2"
+DATA_DIR = "data4"
 
 def load_run_results(filename):
     with bz2.open(filename) as f:
@@ -91,7 +91,7 @@ def get_validators(verifier0):
 
 verifiers = get_verifiers()
 
-with open("out2_property.csv", "w", newline="") as csvfile:
+with open("out4.csv", "w", newline="") as csvfile:
     fields = ["verifier", "validator", "property", "expected_verdict", "verifier_status", "validator_status", "count"]
     writer = csv.DictWriter(csvfile, fieldnames=fields)
     writer.writeheader()
