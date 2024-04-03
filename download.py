@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List, Set
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2024/results"
-DATA_DIR = "data4"
+DATA_DIR = "data5"
 
 # verifiers = ["goblint", "mopsa", "uautomizer"]
 # verifiers = ["cpachecker"]
