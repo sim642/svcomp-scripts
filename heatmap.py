@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 data = pd.read_csv("out4.csv")
 print(data)
 
+data = data[data["validator"].map(lambda v: v.endswith("correctness-witnesses-2.0"))]
+
 true = data[data["expected_verdict"] == "true"]
 false = data[data["expected_verdict"] == "false"]
 
@@ -32,7 +34,10 @@ true_pivot = true_ratio.pivot_table(index="verifier", columns="validator", value
 false_pivot = false_ratio.pivot_table(index="verifier", columns="validator", values="count").filter(axis=1, like="violation") # TODO: some correctness validators confirm falses?
 pivot = true_pivot.join(false_pivot, how="outer").sort_index(axis=1)
 
+print(pivot)
+(pivot * 100).to_csv("yaml-correctness2.csv")
+
 plt.figure(figsize=(12, 9))
 h = sns.heatmap(data=pivot, vmin=0.0, vmax=1.0, square=True, cmap="RdYlGn", xticklabels=True, yticklabels=True)
-h.get_figure().savefig("out4.svg", bbox_inches="tight")
+h.get_figure().savefig("yaml-correctness2.svg", bbox_inches="tight")
 
