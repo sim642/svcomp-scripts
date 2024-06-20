@@ -1,0 +1,3 @@
+[submodule "validation-track/competition-scripts"]
+	path = validation-track/competition-scripts
+	url = https://gitlab.com/sosy-lab/benchmarking/competition-scripts.git
