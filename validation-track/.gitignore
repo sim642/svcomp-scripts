@@ -1,4 +1,4 @@
-results-verified/
-results-validated/
-yaml-witnesses/
-svcomp24-witnesses/
+results-verified*/
+results-validated*/
+yaml-witnesses*/
+svcomp*-witnesses/

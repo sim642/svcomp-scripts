@@ -53,7 +53,7 @@ else:
     progressbar.streams.wrap_stderr()
 
 # %%
-FILE_STORE = Path("svcomp24-witnesses/fileByHash").absolute()
+FILE_STORE = Path("svcomp25-witnesses/fileByHash").absolute()
 
 
 def eager_search(store_hash, target_suffix):
