@@ -41,6 +41,9 @@ def download(url, filename):
             response.raise_for_status()
     else:
         with requests.get(url, stream=True) as response:
+            # sosy-lab.org returns html tables also with HTTP compression, but streaming requests doesn't decompress it like any normal HTTP downloader by default
+            # https://github.com/psf/requests/issues/2155#issuecomment-287628933
+            response.raw.decode_content = True
             response.raise_for_status()
             with open(filename, "wb") as f:
                 shutil.copyfileobj(response.raw, f)
