@@ -9,6 +9,7 @@ from typing import List, Set
 BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
 DATA_DIR = "data_svcomp26-2"
 DRY_RUN = False
+VALIDATORS = False
 
 verifier = "goblint"
 
@@ -112,13 +113,12 @@ for i, tool_run in enumerate(verifier_runs):
     download_tool_run_xml(tool_run, validator=False, fixed=True)
     download_tool_run_table(tool_run, validator=False)
 
-    s = get_validator_runs(tool_run)
-    for a in s:
-        tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
-        validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False)
-        print(f"  {a}")
-        print(f"    {validator_tool_run}")
-        download_tool_run_xml(validator_tool_run, validator=True, fixed=False)
-        # download_tool_run_table(validator_tool_run, validator=True)
-
-
+    if VALIDATORS:
+        s = get_validator_runs(tool_run) # TODO: don't redownload table
+        for a in s:
+            tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
+            validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False)
+            print(f"  {a}")
+            print(f"    {validator_tool_run}")
+            download_tool_run_xml(validator_tool_run, validator=True, fixed=False)
+            # download_tool_run_table(validator_tool_run, validator=True)
