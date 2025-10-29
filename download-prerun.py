@@ -81,8 +81,8 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
     unfixed = get_validator_runs_table(f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2.table.html")
     return fixed.union(unfixed)
 
-def download_tool_run_xml(tool_run: ToolRun, validator: bool):
-    filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2"
+def download_tool_run_xml(tool_run: ToolRun, validator: bool, fixed: bool):
+    filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed and fixed else ''}"
     if validator:
         url = f"{BASE_URL}/results-validated/{filename}"
         download(url, f"{DATA_DIR}/results-validated/{filename}")
@@ -108,7 +108,8 @@ for i, tool_run in enumerate(verifier_runs):
         continue
 
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
-    download_tool_run_xml(tool_run, validator=False)
+    download_tool_run_xml(tool_run, validator=False, fixed=False)
+    download_tool_run_xml(tool_run, validator=False, fixed=True)
     download_tool_run_table(tool_run, validator=False)
 
     s = get_validator_runs(tool_run)
@@ -117,7 +118,7 @@ for i, tool_run in enumerate(verifier_runs):
         validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False)
         print(f"  {a}")
         print(f"    {validator_tool_run}")
-        download_tool_run_xml(validator_tool_run, validator=True)
+        download_tool_run_xml(validator_tool_run, validator=True, fixed=False)
         # download_tool_run_table(validator_tool_run, validator=True)
 
 
