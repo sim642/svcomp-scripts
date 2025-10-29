@@ -45,6 +45,10 @@ def download(url, filename):
             with open(filename, "wb") as f:
                 shutil.copyfileobj(response.raw, f)
 
+def download2(filename):
+    url = f"{BASE_URL}/{filename}"
+    download(url, f"{DATA_DIR}/{filename}")
+
 
 
 get_verifier_runs_re = re.compile(r"([\w-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP26_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
@@ -88,23 +92,19 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
 def download_tool_run_xml(tool_run: ToolRun, validator: bool, fixed: bool):
     filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed and fixed else ''}"
     if validator:
-        url = f"{BASE_URL}/results-validated/{filename}"
-        download(url, f"{DATA_DIR}/results-validated/{filename}")
+        download2(f"results-validated/{filename}")
     else:
-        url = f"{BASE_URL}/results-verified/{filename}"
-        download(url, f"{DATA_DIR}/results-verified/{filename}")
+        download2(f"results-verified/{filename}")
 
 def download_tool_run_table(tool_run: ToolRun, validator: bool):
     filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed else ''}.table.html"
     if validator:
-        url = f"{BASE_URL}/results-validated/{filename}"
-        download(url, f"{DATA_DIR}/results-validated/{filename}")
+        download2(f"results-validated/{filename}")
     else:
-        url = f"{BASE_URL}/results-verified/{filename}"
-        download(url, f"{DATA_DIR}/results-verified/{filename}")
+        download2(f"results-verified/{filename}")
 
 if not DRY_RUN:
-    download(f"{BASE_URL}/results-verified/{verifier}.results.SV-COMP26.table.html", f"{DATA_DIR}/results-verified/{verifier}.results.SV-COMP26.table.html")
+    download2(f"results-verified/{verifier}.results.SV-COMP26.table.html")
 
 verifier_runs = get_verifier_runs(verifier)
 for i, tool_run in enumerate(verifier_runs):
