@@ -8,15 +8,9 @@ from typing import List, Set
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
 DATA_DIR = "data_svcomp26-2"
-DRY_RUN = True
+DRY_RUN = False
 
-# verifiers = ["goblint", "mopsa", "uautomizer"]
-# verifiers = ["cpachecker"]
-# verifiers = ["goblint", "mopsa", "uautomizer", "cpachecker"]
-verifiers = ["goblint"]
-# validators = verifiers
-# validators = ["goblint", "mopsa", "uautomizer"]
-# validators = ["cpachecker"]
+verifier = "goblint"
 
 if not DRY_RUN:
     os.makedirs(DATA_DIR)
@@ -96,7 +90,7 @@ def download_tool_run_xml(tool_run: ToolRun, validator: bool):
 
 verifier_runs = get_verifier_runs()
 for i, tool_run in enumerate(verifier_runs):
-    if tool_run.tool not in verifiers:
+    if tool_run.tool != verifier:
         continue
 
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
@@ -104,8 +98,6 @@ for i, tool_run in enumerate(verifier_runs):
 
     s = get_validator_runs(tool_run)
     for a in s:
-        # if a.validator not in validators:
-        #     continue
         tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
         validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set)
         print(f"  {a}")
