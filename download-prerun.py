@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List, Set
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
-DATA_DIR = "data_svcomp26-2"
+DATA_DIR = "data_svcomp26-3"
 DRY_RUN = False
 VALIDATORS = False
 
@@ -50,7 +50,7 @@ def download(url, filename):
 get_verifier_runs_re = re.compile(r"([\w-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP26_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
 get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w.-]+)-validate-(violation|correctness)-witnesses-([12].0)-([\w.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
 
-def get_verifier_runs() -> List[ToolRun]:
+def get_all_verifier_runs() -> List[ToolRun]:
     with requests.get(f"{BASE_URL}/results-verified/results-per-tool.php") as response:
         tree = lxml.html.fromstring(response.text)
         ret = []
@@ -64,6 +64,9 @@ def get_verifier_runs() -> List[ToolRun]:
                 fixed = m.group(5) is not None
                 ret.append(ToolRun(tool=tool, date=date, run_definition=run_definition, task_set=task_set, fixed=fixed))
         return ret
+
+def get_verifier_runs(verifier: str) -> List[ToolRun]:
+    return [tool_run for tool_run in get_all_verifier_runs() if tool_run.tool == verifier]
 
 def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
     def get_validator_runs_table(table_filename):
@@ -103,11 +106,8 @@ def download_tool_run_table(tool_run: ToolRun, validator: bool):
 if not DRY_RUN:
     download(f"{BASE_URL}/results-verified/{verifier}.results.SV-COMP26.table.html", f"{DATA_DIR}/results-verified/{verifier}.results.SV-COMP26.table.html")
 
-verifier_runs = get_verifier_runs()
+verifier_runs = get_verifier_runs(verifier)
 for i, tool_run in enumerate(verifier_runs):
-    if tool_run.tool != verifier:
-        continue
-
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     download_tool_run_xml(tool_run, validator=False, fixed=False)
     download_tool_run_xml(tool_run, validator=False, fixed=True)
