@@ -129,6 +129,7 @@ if args.download_verifier_tables:
     download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
 
 verifier_runs = get_verifier_runs(args.verifier)
+downloaded_logs = False
 for i, tool_run in enumerate(verifier_runs):
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     if args.download_verifier_xmls:
@@ -136,8 +137,9 @@ for i, tool_run in enumerate(verifier_runs):
         download_tool_run_xml(tool_run, validator=False, fixed=True)
     if args.download_verifier_tables:
         download_tool_run_table(tool_run, validator=False)
-    if args.download_verifier_logs:
-        download_tool_run_logs(tool_run, validator=False) # TODO: only download once
+    if args.download_verifier_logs and not downloaded_logs:
+        download_tool_run_logs(tool_run, validator=False) # TODO: check if logs with this timestamp actually exist when skipping
+        downloaded_logs = True
 
     if args.download_validator_xmls:
         s = get_validator_runs(tool_run) # TODO: don't redownload table
