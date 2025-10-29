@@ -5,11 +5,12 @@ import shutil
 import os
 from dataclasses import dataclass
 from typing import List, Set
+from urllib.parse import unquote
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
-DATA_DIR = "data_svcomp26-3"
+DATA_DIR = "data_svcomp26-4"
 DRY_RUN = False
-VALIDATORS = False
+VALIDATORS = True
 
 verifier = "goblint"
 
@@ -54,8 +55,9 @@ def download2(filename):
 
 
 
-get_verifier_runs_re = re.compile(r"([\w-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP26_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
-get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w.-]+)-validate-(violation|correctness)-witnesses-([12].0)-([\w.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
+get_verifier_runs_re = re.compile(r"([\w%-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP26_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
+get_validator_runs_loose_re = re.compile(r""""href": "..\/results-validated\/.*?.logfiles""")
+get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w%.-]+)-validate-(violation|correctness)-witnesses-([12].0)-([\w%.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
 
 def get_all_verifier_runs() -> List[ToolRun]:
     with requests.get(f"{BASE_URL}/results-verified/results-per-tool.php") as response:
@@ -79,11 +81,14 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
     def get_validator_runs_table(table_filename):
         with requests.get(f"{BASE_URL}/results-verified/{table_filename}") as response:
             ret = set()
-            for m in get_validator_runs_re.finditer(response.text):
-                validator = m.group(1)
+            for m in get_validator_runs_loose_re.finditer(response.text):
+                m2 = get_validator_runs_re.fullmatch(m.group(0))
+                assert m2 is not None, m.group(0)
+                m = m2
+                validator = unquote(m.group(1))
                 kind = m.group(2)
                 version = m.group(3)
-                verifier = m.group(4)
+                verifier = unquote(m.group(4))
                 date = m.group(5)
                 ret.add(ValidatorRun(validator=validator, kind=kind, version=version, date=date, verifier=verifier))
             return ret
