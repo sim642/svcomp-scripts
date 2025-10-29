@@ -8,7 +8,7 @@ from typing import List, Set
 from urllib.parse import unquote
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
-DATA_DIR = "data_svcomp26-4"
+DATA_DIR = "data_svcomp26-5"
 DRY_RUN = False
 VALIDATORS = True
 
@@ -111,6 +111,13 @@ def download_tool_run_table(tool_run: ToolRun, validator: bool):
     else:
         download2(f"results-verified/{filename}")
 
+def download_tool_run_logs(tool_run: ToolRun, validator: bool):
+    filename = f"{tool_run.tool}.{tool_run.date}.logfiles.zip"
+    if validator:
+        download2(f"results-validated/{filename}")
+    else:
+        download2(f"results-verified/{filename}")
+
 if not DRY_RUN:
     download2(f"results-verified/{verifier}.results.SV-COMP26.table.html")
 
@@ -120,6 +127,7 @@ for i, tool_run in enumerate(verifier_runs):
     download_tool_run_xml(tool_run, validator=False, fixed=False)
     download_tool_run_xml(tool_run, validator=False, fixed=True)
     download_tool_run_table(tool_run, validator=False)
+    download_tool_run_logs(tool_run, validator=False)
 
     if VALIDATORS:
         s = get_validator_runs(tool_run) # TODO: don't redownload table
@@ -130,3 +138,4 @@ for i, tool_run in enumerate(verifier_runs):
             print(f"    {validator_tool_run}")
             download_tool_run_xml(validator_tool_run, validator=True, fixed=False)
             # download_tool_run_table(validator_tool_run, validator=True)
+            # TODO: download validator logs? maybe pointless if witnesses can't be downloaded, or maybe especially useful then
