@@ -6,15 +6,16 @@ import os
 from dataclasses import dataclass
 from typing import List, Set
 
-BASE_URL = "https://sv-comp.sosy-lab.org/2024/results"
-DATA_DIR = "data4"
+BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
+DATA_DIR = "data_svcomp26-1"
 
 # verifiers = ["goblint", "mopsa", "uautomizer"]
 # verifiers = ["cpachecker"]
-verifiers = ["goblint", "mopsa", "uautomizer", "cpachecker"]
+# verifiers = ["goblint", "mopsa", "uautomizer", "cpachecker"]
+verifiers = ["goblint"]
 # validators = verifiers
 # validators = ["goblint", "mopsa", "uautomizer"]
-validators = ["cpachecker"]
+# validators = ["cpachecker"]
 
 os.makedirs(DATA_DIR)
 
@@ -42,7 +43,7 @@ def download(url, filename):
 
 
 
-get_verifier_runs_re = re.compile(r"([\w-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP24_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
+get_verifier_runs_re = re.compile(r"([\w-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP26_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
 get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w.-]+)-validate-(violation|correctness)-witnesses-([12].0)-([\w.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
 
 def get_verifier_runs() -> List[ToolRun]:
@@ -86,8 +87,8 @@ def download_tool_run_xml(tool_run: ToolRun, validator: bool):
 
 verifier_runs = get_verifier_runs()
 for i, tool_run in enumerate(verifier_runs):
-    # if tool_run.tool not in verifiers:
-    #     continue
+    if tool_run.tool not in verifiers:
+        continue
 
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     download_tool_run_xml(tool_run, validator=False)

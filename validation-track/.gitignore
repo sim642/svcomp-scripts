@@ -2,3 +2,5 @@ results-verified*/
 results-validated*/
 yaml-witnesses*/
 svcomp*-witnesses/
+svcomp*-results/
+*.pyc
