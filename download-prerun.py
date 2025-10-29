@@ -8,6 +8,7 @@ from typing import List, Set
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
 DATA_DIR = "data_svcomp26-2"
+DRY_RUN = True
 
 # verifiers = ["goblint", "mopsa", "uautomizer"]
 # verifiers = ["cpachecker"]
@@ -17,9 +18,10 @@ verifiers = ["goblint"]
 # validators = ["goblint", "mopsa", "uautomizer"]
 # validators = ["cpachecker"]
 
-os.makedirs(DATA_DIR)
-os.makedirs(f"{DATA_DIR}/results-verified")
-os.makedirs(f"{DATA_DIR}/results-validated")
+if not DRY_RUN:
+    os.makedirs(DATA_DIR)
+    os.makedirs(f"{DATA_DIR}/results-verified")
+    os.makedirs(f"{DATA_DIR}/results-validated")
 
 @dataclass(frozen=True)
 class ToolRun:
@@ -38,10 +40,14 @@ class ValidatorRun:
 
 def download(url, filename):
     print(f"Download {url}")
-    with requests.get(url, stream=True) as response:
-        response.raise_for_status()
-        with open(filename, "wb") as f:
-            shutil.copyfileobj(response.raw, f)
+    if DRY_RUN:
+        with requests.head(url) as response:
+            response.raise_for_status()
+    else:
+        with requests.get(url, stream=True) as response:
+            response.raise_for_status()
+            with open(filename, "wb") as f:
+                shutil.copyfileobj(response.raw, f)
 
 
 
