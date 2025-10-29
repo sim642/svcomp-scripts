@@ -23,6 +23,7 @@ class ToolRun:
     date: str
     run_definition: str
     task_set: str
+    fixed: bool
 
 @dataclass(frozen=True)
 class ValidatorRun:
@@ -59,7 +60,8 @@ def get_verifier_runs() -> List[ToolRun]:
                 date = m.group(2)
                 run_definition = m.group(3)
                 task_set = m.group(4)
-                ret.append(ToolRun(tool=tool, date=date, run_definition=run_definition, task_set=task_set))
+                fixed = m.group(5) is not None
+                ret.append(ToolRun(tool=tool, date=date, run_definition=run_definition, task_set=task_set, fixed=fixed))
         return ret
 
 def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
@@ -88,6 +90,18 @@ def download_tool_run_xml(tool_run: ToolRun, validator: bool):
         url = f"{BASE_URL}/results-verified/{filename}"
         download(url, f"{DATA_DIR}/results-verified/{filename}")
 
+def download_tool_run_table(tool_run: ToolRun, validator: bool):
+    filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed else ''}.table.html"
+    if validator:
+        url = f"{BASE_URL}/results-validated/{filename}"
+        download(url, f"{DATA_DIR}/results-validated/{filename}")
+    else:
+        url = f"{BASE_URL}/results-verified/{filename}"
+        download(url, f"{DATA_DIR}/results-verified/{filename}")
+
+if not DRY_RUN:
+    download(f"{BASE_URL}/results-verified/{verifier}.results.SV-COMP26.table.html", f"{DATA_DIR}/results-verified/{verifier}.results.SV-COMP26.table.html")
+
 verifier_runs = get_verifier_runs()
 for i, tool_run in enumerate(verifier_runs):
     if tool_run.tool != verifier:
@@ -95,13 +109,15 @@ for i, tool_run in enumerate(verifier_runs):
 
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     download_tool_run_xml(tool_run, validator=False)
+    download_tool_run_table(tool_run, validator=False)
 
     s = get_validator_runs(tool_run)
     for a in s:
         tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
-        validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set)
+        validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False)
         print(f"  {a}")
         print(f"    {validator_tool_run}")
         download_tool_run_xml(validator_tool_run, validator=True)
+        # download_tool_run_table(validator_tool_run, validator=True)
 
 
