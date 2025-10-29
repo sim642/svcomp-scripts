@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List, Set
 
 BASE_URL = "https://sv-comp.sosy-lab.org/2026/results"
-DATA_DIR = "data_svcomp26-1"
+DATA_DIR = "data_svcomp26-2"
 
 # verifiers = ["goblint", "mopsa", "uautomizer"]
 # verifiers = ["cpachecker"]
@@ -18,6 +18,8 @@ verifiers = ["goblint"]
 # validators = ["cpachecker"]
 
 os.makedirs(DATA_DIR)
+os.makedirs(f"{DATA_DIR}/results-verified")
+os.makedirs(f"{DATA_DIR}/results-validated")
 
 @dataclass(frozen=True)
 class ToolRun:
@@ -81,9 +83,10 @@ def download_tool_run_xml(tool_run: ToolRun, validator: bool):
     filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2"
     if validator:
         url = f"{BASE_URL}/results-validated/{filename}"
+        download(url, f"{DATA_DIR}/results-validated/{filename}")
     else:
         url = f"{BASE_URL}/results-verified/{filename}"
-    download(url, f"{DATA_DIR}/{filename}")
+        download(url, f"{DATA_DIR}/results-verified/{filename}")
 
 verifier_runs = get_verifier_runs()
 for i, tool_run in enumerate(verifier_runs):
