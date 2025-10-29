@@ -9,14 +9,27 @@ from typing import List, Set
 from urllib.parse import unquote
 
 
+# https://stackoverflow.com/a/43357954/854540
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--year", type=int, default=2026)
 parser.add_argument("--verifier", type=str, required=True)
 parser.add_argument("--output", type=str, required=True)
-parser.add_argument("--download-verifier-xmls", type=bool, default=True)
-parser.add_argument("--download-verifier-tables", type=bool, default=True)
-parser.add_argument("--download-verifier-logs", type=bool, default=True)
-parser.add_argument("--download-validator-xmls", type=bool, default=True)
+parser.add_argument("--download-verifier-xmls", type=str2bool, default=True)
+parser.add_argument("--download-verifier-tables", type=str2bool, default=True)
+parser.add_argument("--download-verifier-logs", type=str2bool, default=True)
+parser.add_argument("--download-validator-xmls", type=str2bool, default=True)
 args = parser.parse_args()
 
 # TODO: lowercase
