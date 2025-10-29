@@ -4,6 +4,7 @@ import re
 import shutil
 import os
 import argparse
+import dataclasses
 from dataclasses import dataclass
 from typing import List, Set
 from urllib.parse import unquote
@@ -144,7 +145,13 @@ if args.download_verifier_tables:
 
 verifier_runs = get_verifier_runs(args.verifier)
 downloaded_logs = False
+done_verifier_runs = set()
 for i, tool_run in enumerate(verifier_runs):
+    if tool_run in done_verifier_runs:
+        if tool_run.task_set == "C.unreach-call.SoftwareSystems-DeviceDriversLinux64Large":
+            tool_run = dataclasses.replace(tool_run, task_set="C.unreach-call.SoftwareSystems-DeviceDriversLinux64")
+        else:
+            assert False, tool_run.task_set
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     if args.download_verifier_xmls:
         download_tool_run_xml(tool_run, fixed=False)
@@ -165,3 +172,5 @@ for i, tool_run in enumerate(verifier_runs):
             download_tool_run_xml(validator_tool_run, fixed=False)
             # download_tool_run_table(validator_tool_run, validator=True)
             # TODO: download validator logs? maybe pointless if witnesses can't be downloaded, or maybe especially useful then
+
+    done_verifier_runs.add(tool_run)
