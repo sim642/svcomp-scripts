@@ -135,19 +135,22 @@ def download_tool_run_table(tool_run: ToolRun):
     else:
         download2(f"results-verified/{filename}")
 
+downloaded_logs = set()
+
 def download_tool_run_logs(tool_run: ToolRun):
     filename = f"{tool_run.tool}.{tool_run.date}.logfiles.zip"
+    if filename in downloaded_logs:
+        return
     if tool_run.validator:
         download2(f"results-validated/{filename}")
     else:
         download2(f"results-verified/{filename}")
+    downloaded_logs.add(filename)
 
 if args.download_verifier_tables:
     download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
 
 verifier_runs = get_verifier_runs(args.verifier)
-downloaded_logs = False
-downloaded_validator_logs = set()
 done_verifier_runs = set()
 for i, tool_run in enumerate(verifier_runs):
     if tool_run in done_verifier_runs:
@@ -161,9 +164,8 @@ for i, tool_run in enumerate(verifier_runs):
         download_tool_run_xml(tool_run, fixed=True)
     if args.download_verifier_tables:
         download_tool_run_table(tool_run)
-    if args.download_verifier_logs and not downloaded_logs:
-        download_tool_run_logs(tool_run) # TODO: check if logs with this timestamp actually exist when skipping
-        downloaded_logs = True
+    if args.download_verifier_logs:
+        download_tool_run_logs(tool_run)
 
     if args.download_validator_xmls or args.download_validator_logs:
         s = get_validator_runs(tool_run) # TODO: don't redownload table
@@ -175,8 +177,7 @@ for i, tool_run in enumerate(verifier_runs):
             if args.download_validator_xmls:
                 download_tool_run_xml(validator_tool_run, fixed=False)
             # download_tool_run_table(validator_tool_run, validator=True)
-            if args.download_validator_logs and tool not in downloaded_validator_logs:
-                download_tool_run_logs(validator_tool_run) # TODO: check if logs with this timestamp actually exist when skipping
-                downloaded_validator_logs.add(tool)
+            if args.download_validator_logs:
+                download_tool_run_logs(validator_tool_run)
 
     done_verifier_runs.add(tool_run)
