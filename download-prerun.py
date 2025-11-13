@@ -31,6 +31,7 @@ parser.add_argument("--download-verifier-xmls", type=str2bool, default=True)
 parser.add_argument("--download-verifier-tables", type=str2bool, default=True)
 parser.add_argument("--download-verifier-logs", type=str2bool, default=True)
 parser.add_argument("--download-validator-xmls", type=str2bool, default=True)
+parser.add_argument("--download-validator-logs", type=str2bool, default=True)
 args = parser.parse_args()
 
 # TODO: lowercase
@@ -40,8 +41,9 @@ short_year = args.year % 100
 
 
 os.makedirs(DATA_DIR)
-os.makedirs(f"{DATA_DIR}/results-verified")
-if args.download_validator_xmls:
+if args.download_verifier_xmls or args.download_verifier_tables or args.download_verifier_logs:
+    os.makedirs(f"{DATA_DIR}/results-verified")
+if args.download_validator_xmls or args.download_validator_logs:
     os.makedirs(f"{DATA_DIR}/results-validated")
 
 @dataclass(frozen=True)
@@ -145,6 +147,7 @@ if args.download_verifier_tables:
 
 verifier_runs = get_verifier_runs(args.verifier)
 downloaded_logs = False
+downloaded_validator_logs = set()
 done_verifier_runs = set()
 for i, tool_run in enumerate(verifier_runs):
     if tool_run in done_verifier_runs:
@@ -162,15 +165,18 @@ for i, tool_run in enumerate(verifier_runs):
         download_tool_run_logs(tool_run) # TODO: check if logs with this timestamp actually exist when skipping
         downloaded_logs = True
 
-    if args.download_validator_xmls:
+    if args.download_validator_xmls or args.download_validator_logs:
         s = get_validator_runs(tool_run) # TODO: don't redownload table
         for a in s:
             tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
             validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False, validator=True)
             print(f"  {a}")
             print(f"    {validator_tool_run}")
-            download_tool_run_xml(validator_tool_run, fixed=False)
+            if args.download_validator_xmls:
+                download_tool_run_xml(validator_tool_run, fixed=False)
             # download_tool_run_table(validator_tool_run, validator=True)
-            # TODO: download validator logs? maybe pointless if witnesses can't be downloaded, or maybe especially useful then
+            if args.download_validator_logs and tool not in downloaded_validator_logs:
+                download_tool_run_logs(validator_tool_run) # TODO: check if logs with this timestamp actually exist when skipping
+                downloaded_validator_logs.add(tool)
 
     done_verifier_runs.add(tool_run)
