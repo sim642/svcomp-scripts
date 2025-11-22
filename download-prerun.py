@@ -56,6 +56,11 @@ class ToolRun:
     validator: bool
 
 @dataclass(frozen=True)
+class MetaRun:
+    tool: str
+    task_set: str
+
+@dataclass(frozen=True)
 class ValidatorRun:
     verifier: str
     kind: str
@@ -80,13 +85,15 @@ def download2(filename):
 
 
 get_verifier_runs_re = re.compile(r"([\w%-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP\d{2}_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
+get_verifier_runs_meta_re = re.compile(r"META_([\w.-]+?)_([\w%-]+)\.table\.html")
 get_validator_runs_loose_re = re.compile(r""""href": "..\/results-validated\/.*?.logfiles""")
 get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w%.-]+)-validate-(violation|correctness)-witnesses-([12].0)-([\w%.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
 
-def get_all_verifier_runs() -> List[ToolRun]:
+def get_all_verifier_runs() -> tuple[List[ToolRun], List[MetaRun]]:
     with requests.get(f"{BASE_URL}/results-verified/results-per-tool.php") as response:
         tree = lxml.html.fromstring(response.text)
         ret = []
+        ret_meta = []
         for a_elem in tree.xpath("//a"):
             m = get_verifier_runs_re.fullmatch(a_elem.text)
             if m:
@@ -96,10 +103,18 @@ def get_all_verifier_runs() -> List[ToolRun]:
                 task_set = m.group(4)
                 fixed = m.group(5) is not None
                 ret.append(ToolRun(tool=tool, date=date, run_definition=run_definition, task_set=task_set, fixed=fixed, validator=False))
-        return ret
 
-def get_verifier_runs(verifier: str) -> List[ToolRun]:
-    return [tool_run for tool_run in get_all_verifier_runs() if tool_run.tool == verifier]
+            m = get_verifier_runs_meta_re.fullmatch(a_elem.text)
+            if m:
+                task_set = m.group(1)
+                tool = m.group(2)
+                ret_meta.append(MetaRun(tool=tool, task_set=task_set))
+
+        return (ret, ret_meta)
+
+def get_verifier_runs(verifier: str) -> tuple[List[ToolRun], List[MetaRun]]:
+    runs, meta_runs = get_all_verifier_runs()
+    return ([tool_run for tool_run in runs if tool_run.tool == verifier], [meta_run for meta_run in meta_runs if meta_run.tool == verifier])
 
 def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
     def get_validator_runs_table(table_filename):
@@ -147,10 +162,15 @@ def download_tool_run_logs(tool_run: ToolRun):
         download2(f"results-verified/{filename}")
     downloaded_logs.add(filename)
 
-if args.download_verifier_tables:
-    download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
+# These were old full tables:
+# if args.download_verifier_tables:
+#     download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
 
-verifier_runs = get_verifier_runs(args.verifier)
+verifier_runs, meta_runs = get_verifier_runs(args.verifier)
+if args.download_verifier_tables:
+    for meta_run in meta_runs:
+        download2(f"results-verified/META_{meta_run.task_set}_{meta_run.tool}.table.html")
+
 done_verifier_runs = set()
 for i, tool_run in enumerate(verifier_runs):
     if tool_run in done_verifier_runs:
