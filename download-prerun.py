@@ -46,6 +46,8 @@ if args.download_verifier_xmls or args.download_verifier_tables or args.download
 if args.download_validator_xmls or args.download_validator_logs:
     os.makedirs(f"{DATA_DIR}/results-validated")
 
+http_errors_file = open(f"{DATA_DIR}/http-errors.log", "w")
+
 @dataclass(frozen=True)
 class ToolRun:
     tool: str
@@ -74,9 +76,12 @@ def download(url, filename):
         # sosy-lab.org returns html tables also with HTTP compression, but streaming requests doesn't decompress it like any normal HTTP downloader by default
         # https://github.com/psf/requests/issues/2155#issuecomment-287628933
         response.raw.decode_content = True
-        response.raise_for_status()
-        with open(filename, "wb") as f:
-            shutil.copyfileobj(response.raw, f)
+        try:
+            response.raise_for_status()
+            with open(filename, "wb") as f:
+                shutil.copyfileobj(response.raw, f)
+        except requests.exceptions.HTTPError as e:
+            http_errors_file.write(f"{e}\n")
 
 def download2(filename):
     url = f"{BASE_URL}/{filename}"
