@@ -185,8 +185,6 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
 # if args.download_verifier_tables:
 #     download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
 
-verifier_runs, meta_runs = get_verifier_runs(args.verifier) # TODO: progress
-
 verifier_progress = Progress(
     TextColumn("[progress.description]{task.description}"),
     BarColumn(bar_width=None),
@@ -196,6 +194,10 @@ verifier_progress = Progress(
 
 def main():
     with Live(Group(download_progress, verifier_progress), refresh_per_second=10, transient=False):
+
+        verifier_runs_task = verifier_progress.add_task("(Verifier runs)", total=1)
+        verifier_runs, meta_runs = get_verifier_runs(args.verifier)
+        verifier_progress.advance(verifier_runs_task)
 
         if args.download_verifier_xmls:
             # TODO: why doesn't verifier_progress.track work? (stays at 0)
@@ -229,14 +231,15 @@ def main():
 
         if args.download_validator_xmls or args.download_validator_logs:
             validator_runs = []
+            validator_runs_task = verifier_progress.add_task("(Validator runs)", total=len(verifier_runs))
             for tool_run in verifier_runs:
-                # TODO: progress
                 for a in get_validator_runs(tool_run): # TODO: check that tables are downloaded
                     tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
                     validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False, validator=True)
                     # print(f"  {a}")
                     # print(f"    {validator_tool_run}")
                     validator_runs.append(validator_tool_run)
+                verifier_progress.advance(validator_runs_task)
 
             if args.download_validator_xmls:
                 validator_xmls_task = verifier_progress.add_task("Validator XMLs", total=len(validator_runs))
