@@ -186,9 +186,6 @@ def download_tool_run_logs(filename: str, validator: bool):
 #     download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
 
 verifier_runs, meta_runs = get_verifier_runs(args.verifier) # TODO: progress
-if args.download_verifier_tables: # TODO: progress
-    for meta_run in meta_runs:
-        download2(f"results-verified/META_{meta_run.task_set}_{meta_run.tool}.table.html")
 
 verifier_progress = Progress(
     TextColumn("[progress.description]{task.description}"),
@@ -210,6 +207,11 @@ if args.download_verifier_xmls:
         verifier_progress.advance(verifier_xmls_task)
 
 if args.download_verifier_tables:
+    verifier_meta_tables_task = verifier_progress.add_task("Verifier meta tables", total=len(meta_runs))
+    for meta_run in meta_runs:
+        download2(f"results-verified/META_{meta_run.task_set}_{meta_run.tool}.table.html")
+        verifier_progress.advance(verifier_meta_tables_task)
+
     # TODO: why doesn't verifier_progress.track work? (stays at 0)
     verifier_tables_task = verifier_progress.add_task("Verifier tables", total=len(verifier_runs))
     for tool_run in verifier_runs:
