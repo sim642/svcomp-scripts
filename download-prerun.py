@@ -160,8 +160,9 @@ def get_verifier_runs(verifier: str) -> tuple[List[ToolRun], List[MetaRun]]:
     return ([tool_run for tool_run in runs if tool_run.tool == verifier], [meta_run for meta_run in meta_runs if meta_run.tool == verifier])
 
 def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
-    def get_validator_runs_table(table_filename):
-        with open(f"{DATA_DIR}/{table_filename}", "r") as f:
+    # TODO: used to find validator runs from both fixed and unfixed HTML, does the latter ever exist? should it be added back?
+    try:
+        with open(f"{DATA_DIR}/{tool_run.table_path}", "r") as f:
             ret = set()
             for m in get_validator_runs_loose_re.finditer(f.read()):
                 m2 = get_validator_runs_re.fullmatch(m.group(0))
@@ -174,10 +175,6 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
                 date = m.group(5)
                 ret.add(ValidatorRun(validator=validator, kind=kind, version=version, date=date, verifier=verifier))
             return ret
-
-    # TODO: used to find validator runs from both fixed and unfixed HTML, does the latter ever exist? should it be added back?
-    try:
-        return get_validator_runs_table(tool_run.table_path)
     except FileNotFoundError:
         return set() # if table was 404
 
