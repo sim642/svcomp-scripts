@@ -172,17 +172,11 @@ def download_tool_run_table(tool_run: ToolRun):
     else:
         download2(f"results-verified/{filename}")
 
-downloaded_logs = set()
-
-def download_tool_run_logs(tool_run: ToolRun):
-    filename = f"{tool_run.tool}.{tool_run.date}.logfiles.zip"
-    if filename in downloaded_logs:
-        return
-    if tool_run.validator:
+def download_tool_run_logs(filename: str, validator: bool):
+    if validator:
         download2(f"results-validated/{filename}")
     else:
         download2(f"results-verified/{filename}")
-    downloaded_logs.add(filename)
 
 # These were old full tables:
 # if args.download_verifier_tables:
@@ -221,9 +215,10 @@ if args.download_verifier_tables:
 
 if args.download_verifier_logs:
     # TODO: why doesn't verifier_progress.track work? (stays at 0)
-    verifier_logs_task = verifier_progress.add_task("Verifier logs", total=len(verifier_runs))
-    for tool_run in verifier_runs:
-        download_tool_run_logs(tool_run) # TODO: deduplicate before, so count is right
+    verifier_logs = set(f"{tool_run.tool}.{tool_run.date}.logfiles.zip" for tool_run in verifier_runs)
+    verifier_logs_task = verifier_progress.add_task("Verifier logs", total=len(verifier_logs))
+    for filename in verifier_logs:
+        download_tool_run_logs(filename, validator=False)
         verifier_progress.advance(verifier_logs_task)
 
 if args.download_validator_xmls or args.download_validator_logs:
@@ -245,9 +240,10 @@ if args.download_validator_xmls or args.download_validator_logs:
             # download_tool_run_table(validator_tool_run, validator=True)
 
     if args.download_validator_logs:
-        validator_logs_task = verifier_progress.add_task("Validator logs", total=len(validator_runs))
-        for validator_tool_run in validator_runs:
-            download_tool_run_logs(validator_tool_run) # TODO: deduplicate before, so count is right
+        validator_logs = set(f"{tool_run.tool}.{tool_run.date}.logfiles.zip" for tool_run in validator_runs)
+        validator_logs_task = verifier_progress.add_task("Validator logs", total=len(validator_logs))
+        for filename in validator_logs:
+            download_tool_run_logs(filename, validator=True)
             verifier_progress.advance(validator_logs_task)
 
 live.stop()
