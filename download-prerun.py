@@ -156,7 +156,10 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
 
     filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed else ''}.table.html"
     # TODO: used to find validator runs from both fixed and unfixed HTML, does the latter ever exist? should it be added back?
-    return get_validator_runs_table(filename)
+    try:
+        return get_validator_runs_table(filename)
+    except FileNotFoundError:
+        return set() # if table was 404
 
 def download_tool_run_xml(tool_run: ToolRun, fixed: bool):
     filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed and fixed else ''}"
