@@ -86,14 +86,6 @@ class MetaRun:
     tool: str
     task_set: str
 
-@dataclass(frozen=True)
-class ValidatorRun:
-    verifier: str
-    kind: str
-    version: str
-    validator: str
-    date: str
-
 
 download_progress = Progress(
     TextColumn("[progress.description]{task.description}"),
@@ -159,7 +151,7 @@ def get_verifier_runs(verifier: str) -> tuple[List[ToolRun], List[MetaRun]]:
     runs, meta_runs = get_all_verifier_runs()
     return ([tool_run for tool_run in runs if tool_run.tool == verifier], [meta_run for meta_run in meta_runs if meta_run.tool == verifier])
 
-def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
+def get_validator_runs(tool_run: ToolRun) -> Set[ToolRun]:
     # TODO: used to find validator runs from both fixed and unfixed HTML, does the latter ever exist? should it be added back?
     try:
         with open(f"{DATA_DIR}/{tool_run.table_path}", "r") as f:
@@ -173,7 +165,10 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
                 version = m.group(3)
                 verifier = unquote(m.group(4))
                 date = m.group(5)
-                ret.add(ValidatorRun(validator=validator, kind=kind, version=version, date=date, verifier=verifier))
+                tool = f"{validator}-validate-{kind}-witnesses-{version}-{verifier}"
+                assert verifier == tool_run.tool
+                validator_tool_run = ToolRun(tool=tool, date=date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False, validator=True)
+                ret.add(validator_tool_run)
             return ret
     except FileNotFoundError:
         return set() # if table was 404
@@ -230,12 +225,7 @@ def main():
             validator_runs = []
             validator_runs_task = verifier_progress.add_task("(Validator runs)", total=len(verifier_runs))
             for tool_run in verifier_runs:
-                for a in get_validator_runs(tool_run): # TODO: check that tables are downloaded
-                    tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
-                    validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False, validator=True)
-                    # print(f"  {a}")
-                    # print(f"    {validator_tool_run}")
-                    validator_runs.append(validator_tool_run)
+                validator_runs.extend(get_validator_runs(tool_run)) # TODO: check that tables are downloaded
                 verifier_progress.advance(validator_runs_task)
 
             if args.download_validator_xmls:
