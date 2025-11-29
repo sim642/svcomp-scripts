@@ -4,7 +4,6 @@ import re
 import shutil
 import os
 import argparse
-import dataclasses
 from dataclasses import dataclass
 from typing import List, Set
 from urllib.parse import unquote
@@ -212,13 +211,7 @@ validator_progress = Progress(
 live = Live(Group(download_progress, validator_progress, verifier_progress), refresh_per_second=10, transient=True)
 live.start()
 
-done_verifier_runs = set()
 for i, tool_run in enumerate(verifier_runs):
-    if tool_run in done_verifier_runs:
-        if tool_run.task_set == "C.unreach-call.SoftwareSystems-DeviceDriversLinux64Large":
-            tool_run = dataclasses.replace(tool_run, task_set="C.unreach-call.SoftwareSystems-DeviceDriversLinux64")
-        else:
-            assert False, tool_run.task_set
     # verifier_progress.update(verifier_task, description=str(tool_run))
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     if args.download_verifier_xmls:
@@ -245,7 +238,6 @@ for i, tool_run in enumerate(verifier_runs):
             validator_progress.update(validator_task, advance=1)
         validator_progress.update(validator_task, visible=False)
 
-    done_verifier_runs.add(tool_run)
     verifier_progress.update(verifier_task, advance=1)
 
 live.stop()
