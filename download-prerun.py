@@ -9,6 +9,10 @@ from dataclasses import dataclass
 from typing import List, Set
 from urllib.parse import unquote
 
+from rich.console import Group
+from rich.live import Live
+from rich.progress import Progress
+
 
 # https://stackoverflow.com/a/43357954/854540
 def str2bool(v):
@@ -70,6 +74,9 @@ class ValidatorRun:
     validator: str
     date: str
 
+
+download_progress = Progress()
+
 def download(url, filename):
     print(f"Download {url}")
     with requests.get(url, stream=True) as response:
@@ -78,8 +85,8 @@ def download(url, filename):
         response.raw.decode_content = True
         try:
             response.raise_for_status()
-            with open(filename, "wb") as f:
-                shutil.copyfileobj(response.raw, f)
+            with download_progress.wrap_file(response.raw, total=int(response.headers["Content-length"])) as f0, open(filename, "wb") as f:
+                shutil.copyfileobj(f0, f)
         except requests.exceptions.HTTPError as e:
             http_errors_file.write(f"{e}\n")
 
@@ -176,6 +183,14 @@ if args.download_verifier_tables:
     for meta_run in meta_runs:
         download2(f"results-verified/META_{meta_run.task_set}_{meta_run.tool}.table.html")
 
+verifier_progress = Progress()
+verifier_task = verifier_progress.add_task("Verifier", total=len(verifier_runs))
+validator_progress = Progress()
+
+ # TODO: with
+live = Live(Group(verifier_progress, validator_progress, download_progress), transient=True)
+live.start()
+
 done_verifier_runs = set()
 for i, tool_run in enumerate(verifier_runs):
     if tool_run in done_verifier_runs:
@@ -183,6 +198,7 @@ for i, tool_run in enumerate(verifier_runs):
             tool_run = dataclasses.replace(tool_run, task_set="C.unreach-call.SoftwareSystems-DeviceDriversLinux64")
         else:
             assert False, tool_run.task_set
+    # verifier_progress.update(verifier_task, description=str(tool_run))
     print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
     if args.download_verifier_xmls:
         download_tool_run_xml(tool_run, fixed=False)
@@ -194,6 +210,7 @@ for i, tool_run in enumerate(verifier_runs):
 
     if args.download_validator_xmls or args.download_validator_logs:
         s = get_validator_runs(tool_run) # TODO: don't redownload table
+        validator_task = validator_progress.add_task("Validator", total=len(s))
         for a in s:
             tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
             validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False, validator=True)
@@ -204,5 +221,10 @@ for i, tool_run in enumerate(verifier_runs):
             # download_tool_run_table(validator_tool_run, validator=True)
             if args.download_validator_logs:
                 download_tool_run_logs(validator_tool_run)
+            validator_progress.update(validator_task, advance=1)
+        validator_progress.remove_task(validator_task)
 
     done_verifier_runs.add(tool_run)
+    verifier_progress.update(verifier_task, advance=1)
+
+live.stop()
