@@ -191,7 +191,7 @@ verifier_progress = Progress(
     TextColumn("[progress.description]{task.description}"),
     BarColumn(bar_width=None),
     MofNCompleteColumn(),
-    TimeRemainingColumn(),
+    TimeRemainingColumn(elapsed_when_finished=True),
 )
 
  # TODO: with
