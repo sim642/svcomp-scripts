@@ -188,8 +188,8 @@ def download_tool_run_logs(tool_run: ToolRun):
 # if args.download_verifier_tables:
 #     download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
 
-verifier_runs, meta_runs = get_verifier_runs(args.verifier)
-if args.download_verifier_tables:
+verifier_runs, meta_runs = get_verifier_runs(args.verifier) # TODO: progress
+if args.download_verifier_tables: # TODO: progress
     for meta_run in meta_runs:
         download2(f"results-verified/META_{meta_run.task_set}_{meta_run.tool}.table.html")
 
@@ -199,45 +199,55 @@ verifier_progress = Progress(
     MofNCompleteColumn(),
     TimeRemainingColumn(),
 )
-verifier_task = verifier_progress.add_task("Verifier", total=len(verifier_runs))
-validator_progress = Progress(
-    TextColumn("[progress.description]{task.description}"),
-    BarColumn(bar_width=None),
-    MofNCompleteColumn(),
-    TimeRemainingColumn(),
-)
 
  # TODO: with
-live = Live(Group(download_progress, validator_progress, verifier_progress), refresh_per_second=10, transient=True)
+live = Live(Group(download_progress, verifier_progress), refresh_per_second=10, transient=False,)
 live.start()
 
-for i, tool_run in enumerate(verifier_runs):
-    # verifier_progress.update(verifier_task, description=str(tool_run))
-    print(f"{i + 1}/{len(verifier_runs)}: {tool_run}")
-    if args.download_verifier_xmls:
+if args.download_verifier_xmls:
+    # TODO: why doesn't verifier_progress.track work? (stays at 0)
+    verifier_xmls_task = verifier_progress.add_task("Verifier XMLs", total=len(verifier_runs))
+    for tool_run in verifier_runs:
         download_tool_run_xml(tool_run, fixed=False)
         download_tool_run_xml(tool_run, fixed=True)
-    if args.download_verifier_tables:
-        download_tool_run_table(tool_run)
-    if args.download_verifier_logs:
-        download_tool_run_logs(tool_run)
+        verifier_progress.advance(verifier_xmls_task)
 
-    if args.download_validator_xmls or args.download_validator_logs:
-        s = get_validator_runs(tool_run) # TODO: check that tables are downloaded
-        validator_task = validator_progress.add_task("Validator", total=len(s))
-        for a in s:
+if args.download_verifier_tables:
+    # TODO: why doesn't verifier_progress.track work? (stays at 0)
+    verifier_tables_task = verifier_progress.add_task("Verifier tables", total=len(verifier_runs))
+    for tool_run in verifier_runs:
+        download_tool_run_table(tool_run)
+        verifier_progress.advance(verifier_tables_task)
+
+if args.download_verifier_logs:
+    # TODO: why doesn't verifier_progress.track work? (stays at 0)
+    verifier_logs_task = verifier_progress.add_task("Verifier logs", total=len(verifier_runs))
+    for tool_run in verifier_runs:
+        download_tool_run_logs(tool_run) # TODO: deduplicate before, so count is right
+        verifier_progress.advance(verifier_logs_task)
+
+if args.download_validator_xmls or args.download_validator_logs:
+    validator_runs = []
+    for tool_run in verifier_runs:
+        # TODO: progress
+        for a in get_validator_runs(tool_run): # TODO: check that tables are downloaded
             tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
             validator_tool_run = ToolRun(tool=tool, date=a.date, run_definition=tool_run.run_definition, task_set=tool_run.task_set, fixed=False, validator=True)
-            print(f"  {a}")
-            print(f"    {validator_tool_run}")
-            if args.download_validator_xmls:
-                download_tool_run_xml(validator_tool_run, fixed=False)
-            # download_tool_run_table(validator_tool_run, validator=True)
-            if args.download_validator_logs:
-                download_tool_run_logs(validator_tool_run)
-            validator_progress.update(validator_task, advance=1)
-        validator_progress.update(validator_task, visible=False)
+            # print(f"  {a}")
+            # print(f"    {validator_tool_run}")
+            validator_runs.append(validator_tool_run)
 
-    verifier_progress.update(verifier_task, advance=1)
+    if args.download_validator_xmls:
+        validator_xmls_task = verifier_progress.add_task("Validator XMLs", total=len(validator_runs))
+        for validator_tool_run in validator_runs:
+            download_tool_run_xml(validator_tool_run, fixed=False)
+            verifier_progress.advance(validator_xmls_task)
+            # download_tool_run_table(validator_tool_run, validator=True)
+
+    if args.download_validator_logs:
+        validator_logs_task = verifier_progress.add_task("Validator logs", total=len(validator_runs))
+        for validator_tool_run in validator_runs:
+            download_tool_run_logs(validator_tool_run) # TODO: deduplicate before, so count is right
+            verifier_progress.advance(validator_logs_task)
 
 live.stop()
