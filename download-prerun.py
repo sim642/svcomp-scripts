@@ -9,9 +9,12 @@ from dataclasses import dataclass
 from typing import List, Set
 from urllib.parse import unquote
 
-from rich.console import Group
+from rich.console import Console, Group
 from rich.live import Live
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, DownloadColumn, TransferSpeedColumn, MofNCompleteColumn
+
+
+console = Console()
 
 
 # https://stackoverflow.com/a/43357954/854540
@@ -97,8 +100,8 @@ download_progress = Progress(
 )
 
 def download(url, filename):
-    print(f"Download {url}")
-    download_task = download_progress.add_task(filename[-30:], start=False)
+    console.log(f"Downloading {url}")
+    download_task = download_progress.add_task("Current file", start=False)
     with requests.get(url, stream=True) as response:
         # sosy-lab.org returns html tables also with HTTP compression, but streaming requests doesn't decompress it like any normal HTTP downloader by default
         # https://github.com/psf/requests/issues/2155#issuecomment-287628933
@@ -109,7 +112,9 @@ def download(url, filename):
             download_progress.start_task(download_task)
             with download_progress.wrap_file(response.raw, task_id=download_task) as f0, open(filename, "wb") as f:
                 shutil.copyfileobj(f0, f)
+            console.log(f"Downloaded {url}", style="green")
         except requests.exceptions.HTTPError as e:
+            console.log(f"{e}", style="red")
             http_errors_file.write(f"{e}\n")
         download_progress.update(download_task, visible=False)
 
@@ -185,7 +190,7 @@ verifier_progress = Progress(
 )
 
 def main():
-    with Live(Group(download_progress, verifier_progress), refresh_per_second=10, transient=False):
+    with Live(Group(verifier_progress, download_progress), refresh_per_second=10, transient=False, console=console):
 
         verifier_runs_task = verifier_progress.add_task("(Verifier runs)", total=1)
         verifier_runs, meta_runs = get_verifier_runs(args.verifier)
