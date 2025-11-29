@@ -11,7 +11,7 @@ from urllib.parse import unquote
 
 from rich.console import Group
 from rich.live import Live
-from rich.progress import Progress
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, DownloadColumn, TransferSpeedColumn, MofNCompleteColumn
 
 
 # https://stackoverflow.com/a/43357954/854540
@@ -75,20 +75,31 @@ class ValidatorRun:
     date: str
 
 
-download_progress = Progress()
+download_progress = Progress(
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(bar_width=None),
+    TaskProgressColumn(),
+    DownloadColumn(),
+    TransferSpeedColumn(),
+    TimeRemainingColumn(),
+)
 
 def download(url, filename):
     print(f"Download {url}")
+    download_task = download_progress.add_task(filename[-30:], start=False)
     with requests.get(url, stream=True) as response:
         # sosy-lab.org returns html tables also with HTTP compression, but streaming requests doesn't decompress it like any normal HTTP downloader by default
         # https://github.com/psf/requests/issues/2155#issuecomment-287628933
         response.raw.decode_content = True
         try:
             response.raise_for_status()
-            with download_progress.wrap_file(response.raw, total=int(response.headers["Content-length"])) as f0, open(filename, "wb") as f:
+            download_progress.update(download_task, total=int(response.headers["Content-length"]))
+            download_progress.start_task(download_task)
+            with download_progress.wrap_file(response.raw, task_id=download_task) as f0, open(filename, "wb") as f:
                 shutil.copyfileobj(f0, f)
         except requests.exceptions.HTTPError as e:
             http_errors_file.write(f"{e}\n")
+        download_progress.update(download_task, visible=False)
 
 def download2(filename):
     url = f"{BASE_URL}/{filename}"
@@ -183,12 +194,22 @@ if args.download_verifier_tables:
     for meta_run in meta_runs:
         download2(f"results-verified/META_{meta_run.task_set}_{meta_run.tool}.table.html")
 
-verifier_progress = Progress()
+verifier_progress = Progress(
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(bar_width=None),
+    MofNCompleteColumn(),
+    TimeRemainingColumn(),
+)
 verifier_task = verifier_progress.add_task("Verifier", total=len(verifier_runs))
-validator_progress = Progress()
+validator_progress = Progress(
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(bar_width=None),
+    MofNCompleteColumn(),
+    TimeRemainingColumn(),
+)
 
  # TODO: with
-live = Live(Group(verifier_progress, validator_progress, download_progress), transient=True)
+live = Live(Group(download_progress, validator_progress, verifier_progress), refresh_per_second=10, transient=True)
 live.start()
 
 done_verifier_runs = set()
@@ -222,7 +243,7 @@ for i, tool_run in enumerate(verifier_runs):
             if args.download_validator_logs:
                 download_tool_run_logs(validator_tool_run)
             validator_progress.update(validator_task, advance=1)
-        validator_progress.remove_task(validator_task)
+        validator_progress.update(validator_task, visible=False)
 
     done_verifier_runs.add(tool_run)
     verifier_progress.update(verifier_task, advance=1)
