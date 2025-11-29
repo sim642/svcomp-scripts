@@ -141,9 +141,9 @@ def get_verifier_runs(verifier: str) -> tuple[List[ToolRun], List[MetaRun]]:
 
 def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
     def get_validator_runs_table(table_filename):
-        with requests.get(f"{BASE_URL}/results-verified/{table_filename}") as response:
+        with open(f"{DATA_DIR}/results-verified/{table_filename}", "r") as f:
             ret = set()
-            for m in get_validator_runs_loose_re.finditer(response.text):
+            for m in get_validator_runs_loose_re.finditer(f.read()):
                 m2 = get_validator_runs_re.fullmatch(m.group(0))
                 assert m2 is not None, m.group(0)
                 m = m2
@@ -155,9 +155,9 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
                 ret.add(ValidatorRun(validator=validator, kind=kind, version=version, date=date, verifier=verifier))
             return ret
 
-    fixed = get_validator_runs_table(f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2.fixed.xml.bz2.table.html")
-    unfixed = get_validator_runs_table(f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2.table.html")
-    return fixed.union(unfixed)
+    filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed else ''}.table.html"
+    # TODO: used to find validator runs from both fixed and unfixed HTML, does the latter ever exist? should it be added back?
+    return get_validator_runs_table(filename)
 
 def download_tool_run_xml(tool_run: ToolRun, fixed: bool):
     filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed and fixed else ''}"
@@ -230,7 +230,7 @@ for i, tool_run in enumerate(verifier_runs):
         download_tool_run_logs(tool_run)
 
     if args.download_validator_xmls or args.download_validator_logs:
-        s = get_validator_runs(tool_run) # TODO: don't redownload table
+        s = get_validator_runs(tool_run) # TODO: check that tables are downloaded
         validator_task = validator_progress.add_task("Validator", total=len(s))
         for a in s:
             tool = f"{a.validator}-validate-{a.kind}-witnesses-{a.version}-{a.verifier}"
