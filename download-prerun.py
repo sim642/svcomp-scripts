@@ -101,22 +101,20 @@ download_progress = Progress(
 
 def download(url, filename):
     console.log(f"Downloading {url}")
-    download_task = download_progress.add_task("Current file", start=False)
     with requests.get(url, stream=True) as response:
         # sosy-lab.org returns html tables also with HTTP compression, but streaming requests doesn't decompress it like any normal HTTP downloader by default
         # https://github.com/psf/requests/issues/2155#issuecomment-287628933
         response.raw.decode_content = True
         try:
             response.raise_for_status()
-            download_progress.update(download_task, total=int(response.headers["Content-length"]))
-            download_progress.start_task(download_task)
+            download_task = download_progress.add_task("Current file", total=int(response.headers["Content-length"]))
             with download_progress.wrap_file(response.raw, task_id=download_task) as f0, open(filename, "wb") as f:
                 shutil.copyfileobj(f0, f)
             console.log(f"Downloaded {url}", style="green")
+            download_progress.update(download_task, visible=False)
         except requests.exceptions.HTTPError as e:
             console.log(f"{e}", style="red")
             http_errors_file.write(f"{e}\n")
-        download_progress.update(download_task, visible=False)
 
 def download2(filename):
     url = f"{BASE_URL}/{filename}"
