@@ -188,7 +188,7 @@ verifier_progress = Progress(
 )
 
 def main():
-    with Live(Group(verifier_progress, download_progress), refresh_per_second=10, transient=False, console=console):
+    with Live(Group(download_progress, verifier_progress), refresh_per_second=10, transient=False, console=console):
 
         verifier_runs_task = verifier_progress.add_task("(Verifier runs)", total=1)
         verifier_runs, meta_runs = get_verifier_runs(args.verifier)
