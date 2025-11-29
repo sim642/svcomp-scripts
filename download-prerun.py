@@ -4,6 +4,7 @@ import re
 import shutil
 import os
 import argparse
+import dataclasses
 from dataclasses import dataclass
 from typing import List, Set
 from urllib.parse import unquote
@@ -59,6 +60,26 @@ class ToolRun:
     task_set: str
     fixed: bool
     validator: bool
+
+    @property
+    def xml_path(self):
+        filename = f"{self.tool}.{self.date}.results.{self.run_definition}.{self.task_set}.xml.bz2{'.fixed.xml.bz2' if self.fixed else ''}"
+        if self.validator:
+            return f"results-validated/{filename}"
+        else:
+            return f"results-verified/{filename}"
+
+    @property
+    def table_path(self):
+        return f"{self.xml_path}.table.html"
+
+    @property
+    def logs_path(self):
+        filename = f"{self.tool}.{self.date}.logfiles.zip"
+        if self.validator:
+            return f"results-validated/{filename}"
+        else:
+            return f"results-verified/{filename}"
 
 @dataclass(frozen=True)
 class MetaRun:
@@ -140,7 +161,7 @@ def get_verifier_runs(verifier: str) -> tuple[List[ToolRun], List[MetaRun]]:
 
 def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
     def get_validator_runs_table(table_filename):
-        with open(f"{DATA_DIR}/results-verified/{table_filename}", "r") as f:
+        with open(f"{DATA_DIR}/{table_filename}", "r") as f:
             ret = set()
             for m in get_validator_runs_loose_re.finditer(f.read()):
                 m2 = get_validator_runs_re.fullmatch(m.group(0))
@@ -154,32 +175,15 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
                 ret.add(ValidatorRun(validator=validator, kind=kind, version=version, date=date, verifier=verifier))
             return ret
 
-    filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed else ''}.table.html"
     # TODO: used to find validator runs from both fixed and unfixed HTML, does the latter ever exist? should it be added back?
     try:
-        return get_validator_runs_table(filename)
+        return get_validator_runs_table(tool_run.table_path)
     except FileNotFoundError:
         return set() # if table was 404
 
 def download_tool_run_xml(tool_run: ToolRun, fixed: bool):
-    filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed and fixed else ''}"
-    if tool_run.validator:
-        download2(f"results-validated/{filename}")
-    else:
-        download2(f"results-verified/{filename}")
-
-def download_tool_run_table(tool_run: ToolRun):
-    filename = f"{tool_run.tool}.{tool_run.date}.results.{tool_run.run_definition}.{tool_run.task_set}.xml.bz2{'.fixed.xml.bz2' if tool_run.fixed else ''}.table.html"
-    if tool_run.validator:
-        download2(f"results-validated/{filename}")
-    else:
-        download2(f"results-verified/{filename}")
-
-def download_tool_run_logs(filename: str, validator: bool):
-    if validator:
-        download2(f"results-validated/{filename}")
-    else:
-        download2(f"results-verified/{filename}")
+    tool_run = dataclasses.replace(tool_run, fixed=tool_run.fixed and fixed)
+    download2(tool_run.xml_path)
 
 # These were old full tables:
 # if args.download_verifier_tables:
@@ -214,15 +218,15 @@ def main():
             # TODO: why doesn't verifier_progress.track work? (stays at 0)
             verifier_tables_task = verifier_progress.add_task("Verifier tables", total=len(verifier_runs))
             for tool_run in verifier_runs:
-                download_tool_run_table(tool_run)
+                download2(tool_run.table_path)
                 verifier_progress.advance(verifier_tables_task)
 
         if args.download_verifier_logs:
             # TODO: why doesn't verifier_progress.track work? (stays at 0)
-            verifier_logs = set(f"{tool_run.tool}.{tool_run.date}.logfiles.zip" for tool_run in verifier_runs)
+            verifier_logs = set(tool_run.logs_path for tool_run in verifier_runs)
             verifier_logs_task = verifier_progress.add_task("Verifier logs", total=len(verifier_logs))
             for filename in verifier_logs:
-                download_tool_run_logs(filename, validator=False)
+                download2(filename)
                 verifier_progress.advance(verifier_logs_task)
 
         if args.download_validator_xmls or args.download_validator_logs:
@@ -241,13 +245,13 @@ def main():
                 for validator_tool_run in validator_runs:
                     download_tool_run_xml(validator_tool_run, fixed=False)
                     verifier_progress.advance(validator_xmls_task)
-                    # download_tool_run_table(validator_tool_run, validator=True)
+                    # download2(validator_tool_run.table_path)
 
             if args.download_validator_logs:
-                validator_logs = set(f"{tool_run.tool}.{tool_run.date}.logfiles.zip" for tool_run in validator_runs)
+                validator_logs = set(tool_run.logs_path for tool_run in validator_runs)
                 validator_logs_task = verifier_progress.add_task("Validator logs", total=len(validator_logs))
                 for filename in validator_logs:
-                    download_tool_run_logs(filename, validator=True)
+                    download2(filename)
                     verifier_progress.advance(validator_logs_task)
 
 if __name__ == '__main__':
