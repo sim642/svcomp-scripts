@@ -181,10 +181,6 @@ def get_validator_runs(tool_run: ToolRun) -> Set[ValidatorRun]:
     except FileNotFoundError:
         return set() # if table was 404
 
-def download_tool_run_xml(tool_run: ToolRun, fixed: bool):
-    tool_run = dataclasses.replace(tool_run, fixed=tool_run.fixed and fixed)
-    download2(tool_run.xml_path)
-
 # These were old full tables:
 # if args.download_verifier_tables:
 #     download2(f"results-verified/{args.verifier}.results.SV-COMP{short_year}.table.html")
@@ -205,8 +201,10 @@ def main():
             # TODO: why doesn't verifier_progress.track work? (stays at 0)
             verifier_xmls_task = verifier_progress.add_task("Verifier XMLs", total=len(verifier_runs))
             for tool_run in verifier_runs:
-                download_tool_run_xml(tool_run, fixed=False)
-                download_tool_run_xml(tool_run, fixed=True)
+                download2(tool_run.xml_path)
+                if tool_run.fixed:
+                    tool_run_unfixed = dataclasses.replace(tool_run, fixed=False)
+                    download2(tool_run_unfixed.xml_path)
                 verifier_progress.advance(verifier_xmls_task)
 
         if args.download_verifier_tables:
@@ -243,7 +241,7 @@ def main():
             if args.download_validator_xmls:
                 validator_xmls_task = verifier_progress.add_task("Validator XMLs", total=len(validator_runs))
                 for validator_tool_run in validator_runs:
-                    download_tool_run_xml(validator_tool_run, fixed=False)
+                    download2(validator_tool_run.xml_path)
                     verifier_progress.advance(validator_xmls_task)
                     # download2(validator_tool_run.table_path)
 
