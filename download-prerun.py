@@ -125,7 +125,7 @@ def download2(filename):
 get_verifier_runs_re = re.compile(r"([\w%-]+)\.(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.results\.(SV-COMP\d{2}_[\w-]+).([\w.-]+?).xml.bz2(.fixed.xml.bz2)?.table.html")
 get_verifier_runs_meta_re = re.compile(r"META_([\w.-]+?)_([\w%-]+)\.table\.html")
 get_validator_runs_loose_re = re.compile(r""""href": "..\/results-validated\/.*?.logfiles""")
-get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w%.-]+)-validate-(violation|correctness)-witnesses-([12].0)-([\w%.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
+get_validator_runs_re = re.compile(r""""href": "..\/results-validated\/([\w%.-]+)-validate-(violation|correctness)-witnesses-([12].0|v[12])-([\w%.-]+).(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}).logfiles""")
 
 def get_all_verifier_runs() -> tuple[List[ToolRun], List[MetaRun]]:
     with requests.get(f"{BASE_URL}/results-verified/results-per-tool.php") as response:
