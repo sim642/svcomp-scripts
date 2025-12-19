@@ -85,6 +85,48 @@ for definition in definitions:
                             #print(f"{propertyfile},{taskname},{path},{verdict}")
                             # collect the lines for this propertyfile and taskname and path in a pd frame
                             df.append({"category": taskname, "property": propertyfile, "ymlfile": path, "expected": verdict})
+        if "excludesfile" in task:
+            excludesfile=task["excludesfile"]
+        else:
+            excludesfile = []
+        if not isinstance(excludesfile, list):
+            excludesfile= [excludesfile]
+        for exclude in excludesfile:
+            # setfilename is the svbenchpath + exclude
+            exclude=svbenchpath + "/" + exclude
+            #if file does not exist, skip
+            try:
+                open(exclude, 'r')
+            except FileNotFoundError:
+                print(f"Exclude file {exclude} not found, skipping.")
+                continue
+            #open and read the exclude file
+            with open(exclude, 'r') as f:
+                content=f.read()
+                for line in content.splitlines():
+                    # ignore comments and empty lines
+                    line=line.strip()
+                    if line.startswith("#") or line == "":
+                        continue
+                    paths = glob.glob(svbenchpath + "/c/" + line)
+                    for path in paths:
+                        # open ayml file in path and read the content
+                        with open(path, 'r') as f:
+                            yamlcontent=yaml.safe_load(f)
+                        props=yamlcontent["properties"]
+                        for prop in props:
+                            propfil=prop["property_file"].split("/")[-1].split(".")[0]
+                            if propfil != propertyfile:
+                                continue
+                            # skip if expected_verdict is not a key in prop
+                            if "expected_verdict" not in prop:
+                                continue
+                            verdict=prop["expected_verdict"]
+                            # remove svbenchpath + "/c/" from path
+                            path=path.replace(svbenchpath + "/c/", "")
+                            #print(f"{propertyfile},{taskname},{path},{verdict}")
+                            # collect the lines for this propertyfile and taskname and path in a pd frame
+                            df.remove({"category": taskname, "property": propertyfile, "ymlfile": path, "expected": verdict})
     print("Done")
 df=pd.DataFrame(df)
 
@@ -111,12 +153,12 @@ for metacategory in categories:
     for category in categories_list:
         df_filtered = df[df['category'] == category]
         catcount += len(df_filtered)
-    
+
     # avg is the average number of tasks per category in this metacategory
     avg=1.0
     if categories_list:
         avg = catcount / len(categories_list)
-    
+
     for category in categories_list:
         #property, category = category.split(".", 1)
         #df_filtered = df[(df['property'] == property) & (df['category'] == category)]
@@ -126,7 +168,7 @@ for metacategory in categories:
         #print("  Category:", category, "Property:", property," count:", count, " weight:", weight)
         property = category.split(".")[1]
         weightstable.append({'metacategory': metacategory, 'category': category,'property':property, 'taskcount': count, 'weight': weight})
-    
+
     print(" Total tasks in metacategory", metacategory, ":", catcount)
     metacattable.append({'metacategory': metacategory, 'total_tasks': catcount})
 
