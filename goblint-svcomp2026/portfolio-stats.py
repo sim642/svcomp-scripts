@@ -48,3 +48,9 @@ data_weights_levels = data_weights_cumlevels.diff().fillna(data_weights_cumlevel
 data_weights_levels_pct = (data_weights_levels / data_weights_levels.sum() * 100).rename("pct")
 print(pd.concat([data_weights_cumlevels, data_weights_levels, data_weights_levels_pct], axis=1))
 
+
+# TODO: this also counts unconfirmed! (so doesn't match official table)
+data_weights_true["meta_score"] = data_weights_true["weight"] * 2 # assuming only trues
+data_weights_meta = data_weights_true.groupby(data_weights_true["metacategory"])["meta_score"].sum()
+print(data_weights_meta)
+
