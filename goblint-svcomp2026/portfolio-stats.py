@@ -43,7 +43,8 @@ data_weights_true = data_weights[data_weights["status"] == "true"]
 data_weights_true["overall_score"] = data_weights_true["overallweight"] * 2 # assuming only trues
 # print(data_weights_true)
 data_weights_levels = data_weights_true.groupby(data_weights_true["level"])["overall_score"].sum()
-data_weights_cumlevels = data_weights_levels.cumsum().rename("cumsum")
+data_weights_cumlevels = data_weights_levels.cumsum().rename("cumsum").round()
+data_weights_levels = data_weights_cumlevels.diff().fillna(data_weights_cumlevels).rename("overall_score")
 data_weights_levels_pct = (data_weights_levels / data_weights_levels.sum() * 100).rename("pct")
 print(pd.concat([data_weights_cumlevels, data_weights_levels, data_weights_levels_pct], axis=1))
 
