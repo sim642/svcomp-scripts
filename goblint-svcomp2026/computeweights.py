@@ -91,6 +91,7 @@ for definition in definitions:
             excludesfile = []
         if not isinstance(excludesfile, list):
             excludesfile= [excludesfile]
+        excludesfile.append("Invalid-TaskDefs.set")
         for exclude in excludesfile:
             # setfilename is the svbenchpath + exclude
             exclude=svbenchpath + "/" + exclude
@@ -109,6 +110,7 @@ for definition in definitions:
                     if line.startswith("#") or line == "":
                         continue
                     paths = glob.glob(svbenchpath + "/c/" + line)
+                    paths += glob.glob(svbenchpath + "/" + line) # HACK: allow Invalid-TaskDefs.set paths, which are relative to sv-benhcmarks root, not c/
                     for path in paths:
                         # open ayml file in path and read the content
                         with open(path, 'r') as f:
@@ -126,7 +128,10 @@ for definition in definitions:
                             path=path.replace(svbenchpath + "/c/", "")
                             #print(f"{propertyfile},{taskname},{path},{verdict}")
                             # collect the lines for this propertyfile and taskname and path in a pd frame
-                            df.remove({"category": taskname, "property": propertyfile, "ymlfile": path, "expected": verdict})
+                            try:
+                                df.remove({"category": taskname, "property": propertyfile, "ymlfile": path, "expected": verdict})
+                            except ValueError: # HACK: don't error if Invalid-TaskDefs.set doesn't exclude
+                                pass
     print("Done")
 df=pd.DataFrame(df)
 
