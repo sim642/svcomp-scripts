@@ -169,7 +169,7 @@ for metacategory in categories:
         #df_filtered = df[(df['property'] == property) & (df['category'] == category)]
         df_filtered = df[df['category'] == category]
         count = len(df_filtered)
-        weight = "inf" if count == 0 else round(avg / count, 3)
+        weight = "inf" if count == 0 else round(avg / count, 6)
         #print("  Category:", category, "Property:", property," count:", count, " weight:", weight)
         property = category.split(".")[1]
         weightstable.append({'metacategory': metacategory, 'category': category,'property':property, 'taskcount': count, 'weight': weight})
@@ -182,7 +182,7 @@ all_metacat = sum(item['total_tasks'] for item in metacattable)
 avg_metacat = all_metacat / len(metacattable)
 print("Average tasks per metacategory:", avg_metacat)
 for metacategory in metacattable:
-    metacategory['metaweight'] = "inf" if metacategory['total_tasks'] == 0 else round(avg_metacat / metacategory['total_tasks'], 3)
+    metacategory['metaweight'] = "inf" if metacategory['total_tasks'] == 0 else round(avg_metacat / metacategory['total_tasks'], 6)
 
 
 weightdf = pd.DataFrame(weightstable)
@@ -194,7 +194,7 @@ for index, row in ovaralldf.iterrows():
     if row['weight'] == 'inf' or row['metaweight'] == 'inf':
         ovaralldf.at[index, 'overallweight'] = 'inf'
     else:
-        ovaralldf.at[index, 'overallweight'] = round(row['weight'] * row['metaweight'], 3)
+        ovaralldf.at[index, 'overallweight'] = round(row['weight'] * row['metaweight'], 6)
 
 #weightdf.to_csv("category_weights.csv", index=False)
 #print("Wrote category_weights.csv")
