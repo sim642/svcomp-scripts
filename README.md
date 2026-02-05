@@ -13,9 +13,12 @@ For easy running use [uv].
 ### `download-prerun`
 ```console
 $ uv run download-prerun.py
-usage: download-prerun.py [-h] [--year YEAR] --verifier VERIFIER --output OUTPUT [--download-verifier-xmls DOWNLOAD_VERIFIER_XMLS]
-                          [--download-verifier-tables DOWNLOAD_VERIFIER_TABLES] [--download-verifier-logs DOWNLOAD_VERIFIER_LOGS]
-                          [--download-validator-xmls DOWNLOAD_VALIDATOR_XMLS] [--download-validator-logs DOWNLOAD_VALIDATOR_LOGS]
+usage: download-prerun.py [-h] [--year YEAR] --verifier VERIFIER --output OUTPUT
+                          [--download-verifier-xmls DOWNLOAD_VERIFIER_XMLS]
+                          [--download-verifier-tables DOWNLOAD_VERIFIER_TABLES]
+                          [--download-verifier-logs DOWNLOAD_VERIFIER_LOGS]
+                          [--download-validator-xmls DOWNLOAD_VALIDATOR_XMLS]
+                          [--download-validator-logs DOWNLOAD_VALIDATOR_LOGS]
 ```
 
 ### Others
