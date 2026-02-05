@@ -23,7 +23,7 @@ with open(svbenchpath + "/Invalid-TaskDefs.set", 'r') as f:
         excluded.add(line.removeprefix("c/"))
 
 # exclude invalid tasks
-data.loc[data["sv-benchmarks/c/"].isin(excluded), "category"] = "missing" # like in fixed BenchExec results xml-s, they aren't adapted to invalid task for some reason, only HTMLs
+data.loc[data["sv-benchmarks/c/"].isin(excluded), "category"] = "missing" # like in fixed BenchExec results xml-s, they aren't adapted to invalid task for some reason, only HTMLs (now they are, so this is unnecessary and doesn't change results)
 
 print("confirmed true:")
 data_true = data[(data["status"] == "true") & (data["category"] == "correct")]
